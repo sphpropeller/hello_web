@@ -1,0 +1,134 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>簡単な Todo アプリ</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 300px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .input-group {
+      display: flex;
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      width: calc(100% - 60px);
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
+    button {
+      padding: 10px;
+      border: none;
+      background: #333;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 3px;
+      margin-left: 5px;
+    }
+    button:hover {
+      background: #555;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    li:last-child {
+      border-bottom: none;
+    }
+    .todo-text {
+      flex-grow: 1;
+      cursor: pointer;
+    }
+    .completed {
+      text-decoration: line-through;
+      color: #888;
+    }
+    .delete-btn {
+      background: none;
+      border: none;
+      color: red;
+      font-size: 14px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Todo アプリ</h1>
+    <div class="input-group">
+      <input type="text" id="todo-input" placeholder="新しいタスク">
+      <button id="add-btn">追加</button>
+    </div>
+    <ul id="todo-list"></ul>
+  </div>
+
+  <script>
+    // 追加ボタンおよび Enter キーでタスク追加
+    document.getElementById('add-btn').addEventListener('click', addTodo);
+    document.getElementById('todo-input').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        addTodo();
+      }
+    });
+
+    function addTodo() {
+      const input = document.getElementById('todo-input');
+      const task = input.value.trim();
+      if (task === "") {
+        alert("タスクを入力してください");
+        return;
+      }
+
+      // タスク要素の生成
+      const li = document.createElement('li');
+      const span = document.createElement('span');
+      span.textContent = task;
+      span.className = 'todo-text';
+      // タスククリックで完了状態の切替
+      span.addEventListener('click', function() {
+        span.classList.toggle('completed');
+      });
+      li.appendChild(span);
+
+      // 削除ボタンの生成
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '削除';
+      delBtn.className = 'delete-btn';
+      delBtn.addEventListener('click', function() {
+        li.remove();
+      });
+      li.appendChild(delBtn);
+
+      document.getElementById('todo-list').appendChild(li);
+      input.value = '';
+    }
+  </script>
+</body>
+</html>

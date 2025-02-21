@@ -1,0 +1,260 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>シングルプレイヤーオセロゲーム</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    td {
+      width: 40px;
+      height: 40px;
+      border: 1px solid #333;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .B {
+      color: black;
+    }
+    .W {
+      color: gray;
+    }
+  </style>
+</head>
+<body>
+  <h1>シングルプレイヤーオセロゲーム</h1>
+  <div id="game"></div>
+  <div id="message"></div>
+
+  <script>
+    // 定数の定義
+    const boardSize = 8;
+    const HUMAN = "B";     // 人間は黒（●）
+    const COMPUTER = "W";  // コンピュータは白（○）
+
+    // ゲーム状態
+    let board = [];
+    let currentPlayer = HUMAN; // 最初は人間のターン（黒）
+
+    // 盤面の初期化: 空マスは "." とし、中央に初期配置を行う
+    function initializeBoard() {
+      board = Array.from({ length: boardSize }, () => Array(boardSize).fill("."));
+      board[3][3] = COMPUTER;
+      board[3][4] = HUMAN;
+      board[4][3] = HUMAN;
+      board[4][4] = COMPUTER;
+    }
+
+    // 盤面の描画: HTML の table 要素として表示
+    function renderBoard() {
+      const gameDiv = document.getElementById("game");
+      gameDiv.innerHTML = "";
+      const table = document.createElement("table");
+      for (let r = 0; r < boardSize; r++) {
+        const tr = document.createElement("tr");
+        for (let c = 0; c < boardSize; c++) {
+          const td = document.createElement("td");
+          td.dataset.row = r;
+          td.dataset.col = c;
+          if (board[r][c] === HUMAN) {
+            td.textContent = "●";
+            td.classList.add("B");
+          } else if (board[r][c] === COMPUTER) {
+            td.textContent = "○";
+            td.classList.add("W");
+          } else {
+            td.textContent = "";
+          }
+          // 人間のターンのみクリックを受け付ける
+          td.addEventListener("click", handleCellClick);
+          tr.appendChild(td);
+        }
+        table.appendChild(tr);
+      }
+      gameDiv.appendChild(table);
+    }
+
+    // 人間がセルをクリックしたときの処理
+    function handleCellClick(event) {
+      // 現在人間のターンでなければ何もしない
+      if (currentPlayer !== HUMAN) return;
+
+      const r = parseInt(event.target.dataset.row);
+      const c = parseInt(event.target.dataset.col);
+      if (!isValidMove(r, c, HUMAN)) {
+        alert("そこには置けません。");
+        return;
+      }
+      applyMove(r, c, HUMAN);
+      switchTurn();
+      nextTurn();
+    }
+
+    // 指定位置 (r, c) に player の石を置けるか判定
+    function isValidMove(r, c, player) {
+      if (board[r][c] !== ".") return false;
+      const opponent = (player === HUMAN) ? COMPUTER : HUMAN;
+      const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],           [0, 1],
+        [1, -1],  [1, 0],  [1, 1]
+      ];
+      for (let [dr, dc] of directions) {
+        let nr = r + dr, nc = c + dc;
+        if (nr < 0 || nr >= boardSize || nc < 0 || nc >= boardSize) continue;
+        if (board[nr][nc] !== opponent) continue;
+        nr += dr;
+        nc += dc;
+        while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize) {
+          if (board[nr][nc] === ".") break;
+          if (board[nr][nc] === player) return true;
+          nr += dr;
+          nc += dc;
+        }
+      }
+      return false;
+    }
+
+    // 現在のプレイヤーが置ける全ての手を取得
+    function getValidMoves(player) {
+      const moves = [];
+      for (let r = 0; r < boardSize; r++) {
+        for (let c = 0; c < boardSize; c++) {
+          if (isValidMove(r, c, player)) {
+            moves.push({ r, c });
+          }
+        }
+      }
+      return moves;
+    }
+
+    // 指定位置に player の石を置き、ひっくり返せる石を反転
+    function applyMove(r, c, player) {
+      board[r][c] = player;
+      const opponent = (player === HUMAN) ? COMPUTER : HUMAN;
+      const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],           [0, 1],
+        [1, -1],  [1, 0],  [1, 1]
+      ];
+      for (let [dr, dc] of directions) {
+        let nr = r + dr, nc = c + dc;
+        let piecesToFlip = [];
+        // 相手の石が連続しているか確認
+        while (
+          nr >= 0 && nr < boardSize &&
+          nc >= 0 && nc < boardSize &&
+          board[nr][nc] === opponent
+        ) {
+          piecesToFlip.push({ r: nr, c: nc });
+          nr += dr;
+          nc += dc;
+        }
+        // 連続した先に自分の石があればひっくり返す
+        if (
+          nr >= 0 && nr < boardSize &&
+          nc >= 0 && nc < boardSize &&
+          board[nr][nc] === player
+        ) {
+          for (let pos of piecesToFlip) {
+            board[pos.r][pos.c] = player;
+          }
+        }
+      }
+    }
+
+    // ターンを交代
+    function switchTurn() {
+      currentPlayer = (currentPlayer === HUMAN) ? COMPUTER : HUMAN;
+    }
+
+    // 盤面上の各プレイヤーの石の数をカウント
+    function countPieces() {
+      let counts = { B: 0, W: 0 };
+      for (let r = 0; r < boardSize; r++) {
+        for (let c = 0; c < boardSize; c++) {
+          if (board[r][c] === HUMAN) counts.B++;
+          else if (board[r][c] === COMPUTER) counts.W++;
+        }
+      }
+      return counts;
+    }
+
+    // 状況を画面下部に表示
+    function updateMessage() {
+      const msgDiv = document.getElementById("message");
+      const counts = countPieces();
+      msgDiv.innerHTML = `Black (●): ${counts.B} - White (○): ${counts.W}<br>
+                          現在のターン: ${currentPlayer === HUMAN ? "あなた (Black ●)" : "Computer (White ○)"}`;
+    }
+
+    // ゲーム終了判定（両者とも手がなければ終了）
+    // 終了時は勝敗結果をアラートで表示し、true を返します。
+    function checkGameOver() {
+      const humanMoves = getValidMoves(HUMAN);
+      const computerMoves = getValidMoves(COMPUTER);
+      if (humanMoves.length === 0 && computerMoves.length === 0) {
+        const counts = countPieces();
+        let result = "";
+        if (counts.B > counts.W) result = "あなたの勝ち！";
+        else if (counts.W > counts.B) result = "Computer の勝ち！";
+        else result = "引き分け！";
+        alert("ゲーム終了！ " + result);
+        return true;
+      }
+      return false;
+    }
+
+    // コンピュータの手番の処理：有効な手の中からランダムに選択
+    function computerMove() {
+      const moves = getValidMoves(COMPUTER);
+      if (moves.length === 0) {
+        alert("Computer は置ける手がありません。パスします。");
+        switchTurn();
+        nextTurn();
+        return;
+      }
+      // ランダムに手を選択
+      const move = moves[Math.floor(Math.random() * moves.length)];
+      applyMove(move.r, move.c, COMPUTER);
+      switchTurn();
+      nextTurn();
+    }
+
+    // 次のターンへ進む（パス処理や自動対戦を含む）
+    function nextTurn() {
+      renderBoard();
+      updateMessage();
+      if (checkGameOver()) return;
+      const moves = getValidMoves(currentPlayer);
+      if (moves.length === 0) {
+        alert(`${currentPlayer === HUMAN ? "あなた" : "Computer"} は置ける手がありません。パスします。`);
+        switchTurn();
+        nextTurn();
+      } else if (currentPlayer === COMPUTER) {
+        // コンピュータの手番なら少し待ってから自動実行
+        setTimeout(computerMove, 500);
+      }
+    }
+
+    // 初期化と初回描画
+    initializeBoard();
+    renderBoard();
+    updateMessage();
+    // ゲーム開始時に（万が一）コンピュータのターンなら自動で動かす
+    if (currentPlayer === COMPUTER) {
+      setTimeout(computerMove, 500);
+    }
+  </script>
+</body>
+</html>
+
